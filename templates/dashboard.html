@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Payroll Management System{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Quick Actions -->
+<div class="quick-actions">
+    {% if current_user.role in ['admin', 'hr'] %}
+    <a href="{{ url_for('employees') }}" class="action-card">
+        <i class="fas fa-user-plus"></i>
+        <h3>Add Employee</h3>
+    </a>
+    <a href="{{ url_for('payroll') }}" class="action-card">
+        <i class="fas fa-calculator"></i>
+        <h3>Process Payroll</h3>
+    </a>
+    <a href="{{ url_for('reports') }}" class="action-card">
+        <i class="fas fa-file-export"></i>
+        <h3>Generate Reports</h3>
+    </a>
+    {% endif %}
+    <a href="{{ url_for('profile') }}" class="action-card">
+        <i class="fas fa-user-circle"></i>
+        <h3>My Profile</h3>
+    </a>
+</div>
+
+<!-- Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Total Employees</h3>
+        <div class="number">{{ total_employees }}</div>
+        <p>Active staff members</p>
+    </div>
+    <div class="stat-card">
+        <h3>Payroll Processed</h3>
+        <div class="number">{{ total_payroll_processed }}</div>
+        <p>Total payroll records</p>
+    </div>
+    <div class="stat-card">
+        <h3>This Month</h3>
+        <div class="number">${{ "%.2f"|format((employees | sum(attribute='base_salary') / 2)) }}</div>
+        <p>Estimated payroll</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="content-card">
+            <h3>Payroll Summary</h3>
+            <div class="chart-container">
+                <canvas id="payrollChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="content-card">
+            <h3>Department Distribution</h3>
+            <div class="chart-container">
+                <canvas id="departmentChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="content-card">
+            <h3>Recent Payroll Activities</h3>
+            <div class="recent-activity">
+                {% for payroll in recent_payroll %}
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h4>{{ payroll.employee.first_name }} {{ payroll.employee.last_name }}</h4>
+                        <p>Net Pay: ${{ "%.2f"|format(payroll.net_pay) }} • {{ payroll.pay_period_start }} to {{ payroll.pay_period_end }}</p>
+                    </div>
+                    <span class="badge badge-success">{{ payroll.status|title }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="content-card">
+            <h3>Department Statistics</h3>
+            <div class="department-stats">
+                {% for dept in departments %}
+                <div class="department-card">
+                    <h4>{{ dept.department }}</h4>
+                    <div class="count">{{ dept.count }}</div>
+                    <div class="avg-salary">Avg: ${{ "%.2f"|format(dept.avg_salary) }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

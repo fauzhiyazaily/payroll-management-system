@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Payroll Management System{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="content-card">
+            <div class="text-center">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-circle fa-5x text-primary"></i>
+                </div>
+                <h3 class="mt-3">{{ current_user.username }}</h3>
+                <p class="text-muted">{{ current_user.role|title }}</p>
+                <span class="badge badge-primary">{{ employee.department if employee else 'N/A' }}</span>
+            </div>
+
+            {% if employee %}
+            <div class="mt-4">
+                <h5>Personal Information</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Employee ID:</strong></td>
+                        <td>{{ employee.employee_id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email:</strong></td>
+                        <td>{{ employee.email }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phone:</strong></td>
+                        <td>{{ employee.phone or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Position:</strong></td>
+                        <td>{{ employee.position }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Department:</strong></td>
+                        <td>{{ employee.department }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hire Date:</strong></td>
+                        <td>{{ employee.hire_date }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Base Salary:</strong></td>
+                        <td>${{ "%.2f"|format(employee.base_salary) }}</td>
+                    </tr>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="content-card">
+            <h4>Payroll History</h4>
+            {% if payroll_history %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Pay Period</th>
+                            <th>Gross Pay</th>
+                            <th>Deductions</th>
+                            <th>Net Pay</th>
+                            <th>Status</th>
+                            <th>Pay Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payroll in payroll_history %}
+                        <tr>
+                            <td>{{ payroll.pay_period_start }} to {{ payroll.pay_period_end }}</td>
+                            <td>${{ "%.2f"|format(payroll.gross_pay) }}</td>
+                            <td>${{ "%.2f"|format(payroll.total_deductions) }}</td>
+                            <td><strong>${{ "%.2f"|format(payroll.net_pay) }}</strong></td>
+                            <td>
+                                <span class="badge badge-{{ 'success' if payroll.status == 'processed' else 'warning' }}">
+                                    {{ payroll.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ payroll.pay_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No payroll records found.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="content-card mt-4">
+            <h4>Salary Breakdown</h4>
+            {% if payroll_history %}
+            <div class="chart-container">
+                <canvas id="salaryBreakdownChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-muted">No data available for salary breakdown.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if payroll_history %}
+    const breakdownCtx = document.getElementById('salaryBreakdownChart');
+    if (breakdownCtx) {
+        const latestPayroll = {{ payroll_history[0] | tojson | safe }};
+        
+        new Chart(breakdownCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Base Salary', 'Overtime', 'Bonus', 'Allowances', 'Deductions'],
+                datasets: [{
+                    data: [
+                        latestPayroll.base_salary,
+                        latestPayroll.overtime_pay,
+                        latestPayroll.bonus,
+                        latestPayroll.allowances,
+                        latestPayroll.total_deductions
+                    ],
+                    backgroundColor: [
+                        '#4361ee',
+                        '#4cc9f0',
+                        '#7209b7',
+                        '#f72585',
+                        '#e63946'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Latest Payroll Breakdown'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                return `${label}: $${value.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}
